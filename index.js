@@ -1,14 +1,12 @@
-// q: how to make remote github repo in terminal
-// a: git remote add origin
-// obtain the user's current location using HTML5 geolocation
-navigator.geolocation.getCurrentPosition(function (position) {
-    // var lat = position.coords.latitude;
-    // var lng = position.coords.longitude;
-    var lat = 60.22398617731569;
-    var lng = 24.75839877748185;
-    var range = 700;
-    // send a request to the Overpass API to obtain the nearest stops in the HSL network
-    var overpassUrl = 'https://overpass-api.de/api/interpreter?data=[out:json];node["public_transport"="stop_position"](around:' + range + ',' + lat + ',' + lng + ');out;rel["network"="HSL"]["type"="route_master"](around:1000,' + lat + ',' + lng + ');out;';
+
+var lat = 60.22398617731569;
+var lng = 24.75839877748185;
+var range = 700;
+window.addEventListener('load', function () {
+    getStopsAndSchedules(lat, lng, range);
+});
+function getStopsAndSchedules(lat, lng, range) {
+    var overpassUrl = 'https://overpass-api.de/api/interpreter?data=[out:json];node["public_transport"="stop_position"](around:1000,' + lat + ',' + lng + ');out;rel["network"="HSL"]["type"="route_master"](around:' + range + ',' + lat + ',' + lng + ');out;';
     fetch(overpassUrl)
         .then(function (response) {
             return response.json();
@@ -54,6 +52,66 @@ navigator.geolocation.getCurrentPosition(function (position) {
                 var listItem = document.createElement('li');
                 listItem.innerHTML = '<strong>' + stop.name + '</strong> (ID: ' + stop.id + ', Routes: ' + stop.routes.join(', ') + ')';
                 document.getElementById('stops').appendChild(listItem);
+
+                getSchedules(stop.id);
             });
+        })
+        .catch(function (error) {
+            console.error(error);
         });
-});
+}
+function getSchedules(stopId) {
+	var apiUrl = 'https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql';
+	var query = `
+		{
+		  stop(id: "${stopId}") {
+			name
+			stoptimesWithoutPatterns(numberOfDepartures: 5) {
+			  scheduledDeparture
+			  realtimeDeparture
+			  serviceDay
+			  headsign
+			  trip {
+				routeShortName
+			  }
+			}
+		  }
+		}
+	`;
+	fetch(apiUrl, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/graphql'
+		},
+		body: query
+	})
+	.then(function(response) {
+		return response.json();
+	})
+	.then(function(data) {
+		if (data.data.stop !== null) {
+			var schedules = data.data.stop.stoptimesWithoutPatterns;
+			if (schedules.length > 0) {
+				var scheduleList = document.createElement('ul');
+				schedules.forEach(function(schedule) {
+					var scheduledDeparture = new Date(schedule.serviceDay * 1000 + schedule.scheduledDeparture * 1000);
+					var realtimeDeparture = schedule.realtimeDeparture ? new Date(schedule.serviceDay * 1000 + schedule.realtimeDeparture * 1000) : null;
+					var routeShortName = schedule.trip.routeShortName;
+					var headsign = schedule.headsign;
+					var scheduleItem = document.createElement('li');
+					scheduleItem.innerHTML = '<strong>' + routeShortName + '</strong> to ' + headsign + ' (' + scheduledDeparture.toLocaleTimeString() + (schedule.realtimeDeparture ? ' - ' + realtimeDeparture.toLocaleTimeString() : '') + ')';
+					scheduleList.appendChild(scheduleItem);
+				});
+				document.getElementById('stop-' + stopId).appendChild(scheduleList);
+			} else {
+				document.getElementById('stop-' + stopId).innerHTML = 'No upcoming departures.';
+			}
+		} else {
+			document.getElementById('stop-' + stopId).innerHTML = 'Stop not found.';
+		}
+	})
+	.catch(function(error) {
+		console.error(error);
+	});
+}
+
