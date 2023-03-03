@@ -8,7 +8,7 @@ navigator.geolocation.getCurrentPosition(function (position) {
     var lng = 24.75839877748185;
     var range = 700;
     // send a request to the Overpass API to obtain the nearest stops in the HSL network
-    var overpassUrl = 'https://overpass-api.de/api/interpreter?data=[out:json];node["public_transport"="stop_position"](around:1000,' + lat + ',' + lng + ');out;rel["network"="HSL"]["type"="route_master"](around:1000,' + lat + ',' + lng + ');out;';
+    var overpassUrl = 'https://overpass-api.de/api/interpreter?data=[out:json];node["public_transport"="stop_position"](around:' + range + ',' + lat + ',' + lng + ');out;rel["network"="HSL"]["type"="route_master"](around:1000,' + lat + ',' + lng + ');out;';
     fetch(overpassUrl)
         .then(function (response) {
             return response.json();
