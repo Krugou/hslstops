@@ -1,5 +1,5 @@
-// q: how to make PUSH THIS TO GITHUB WORK?
-// a: git add . && git commit -m "message" && git push origin master
+// q: how to make remote github repo in terminal
+// a: git remote add origin
 // obtain the user's current location using HTML5 geolocation
 navigator.geolocation.getCurrentPosition(function (position) {
     // var lat = position.coords.latitude;
