@@ -8,37 +8,51 @@ navigator.geolocation.getCurrentPosition(function (position) {
     var lng = 24.75839877748185;
     var range = 700;
     // send a request to the Overpass API to obtain the nearest stops in the HSL network
-    var overpassUrl = 'https://overpass-api.de/api/interpreter?data=[out:json];node["public_transport"="stop_position"](around:' + range + ',' + lat + ',' + lng + ');out;';
+    var overpassUrl = 'https://overpass-api.de/api/interpreter?data=[out:json];node["public_transport"="stop_position"](around:1000,' + lat + ',' + lng + ');out;rel["network"="HSL"]["type"="route_master"](around:1000,' + lat + ',' + lng + ');out;';
     fetch(overpassUrl)
         .then(function (response) {
             return response.json();
         })
         .then(function (data) {
-            // parse the response from the Overpass API to extract the relevant information about the nearest stops
             var stops = [];
             data.elements.forEach(function (element) {
-                var stop = {
-                    name: element.tags.name,
-                    lat: element.lat,
-                    lng: element.lon
-                };
-                stops.push(stop);
+                if (element.type === "node") {
+                    var stop = {
+                        id: element.id,
+                        name: element.tags.name,
+                        lat: element.lat,
+                        lng: element.lon,
+                        routes: []
+                    };
+                    stops.push(stop);
+                } else if (element.type === "relation") {
+                    element.members.forEach(function (member) {
+                        if (member.role === "platform") {
+                            var stop = stops.find(function (stop) {
+                                return stop.id === member.ref;
+                            });
+                            if (stop) {
+                                var route = element.tags.ref;
+                                if (stop.routes.indexOf(route) === -1) {
+                                    stop.routes.push(route);
+                                }
+                            }
+                        }
+                    });
+                }
             });
 
-            // display the map using Leaflet
             var map = L.map('map').setView([lat, lng], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            // add markers to the map for each of the nearest stops
             stops.forEach(function (stop) {
                 var marker = L.marker([stop.lat, stop.lng]).addTo(map);
-                marker.bindPopup(stop.name);
+                marker.bindPopup(stop.name + '<br>ID: ' + stop.id + '<br>Routes: ' + stop.routes.join(', '));
 
-                // add the stop name to the list in the body of the page
                 var listItem = document.createElement('li');
-                listItem.innerText = stop.name;
+                listItem.innerHTML = '<strong>' + stop.name + '</strong> (ID: ' + stop.id + ', Routes: ' + stop.routes.join(', ') + ')';
                 document.getElementById('stops').appendChild(listItem);
             });
         });
