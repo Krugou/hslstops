@@ -1,12 +1,14 @@
-
+// q: how to make PUSH THIS TO GITHUB WORK?
+// a: git add . && git commit -m "message" && git push origin master
 // obtain the user's current location using HTML5 geolocation
 navigator.geolocation.getCurrentPosition(function (position) {
     // var lat = position.coords.latitude;
     // var lng = position.coords.longitude;
     var lat = 60.2082749074403;
     var lng = 24.66534874564775;
+    var range = 700
     // send a request to the Overpass API to obtain the nearest stops in the HSL network
-    var overpassUrl = 'https://overpass-api.de/api/interpreter?data=[out:json];node["public_transport"="stop_position"](around:700,' + lat + ',' + lng + ');out;';
+    var overpassUrl = 'https://overpass-api.de/api/interpreter?data=[out:json];node["public_transport"="stop_position"](around:' + range +',' + lat + ',' + lng + ');out;';
     fetch(overpassUrl)
         .then(function (response) {
             return response.json();
