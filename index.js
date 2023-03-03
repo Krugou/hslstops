@@ -4,8 +4,8 @@
 navigator.geolocation.getCurrentPosition(function (position) {
     // var lat = position.coords.latitude;
     // var lng = position.coords.longitude;
-    var lat = 60.223946279342854;
-    var lng = 24.75845785768593;
+    var lat = 60.22398617731569;
+    var lng = 24.75839877748185;
     var range = 700;
     // send a request to the Overpass API to obtain the nearest stops in the HSL network
     var overpassUrl = 'https://overpass-api.de/api/interpreter?data=[out:json];node["public_transport"="stop_position"](around:' + range + ',' + lat + ',' + lng + ');out;';
